@@ -161,16 +161,13 @@ This code is inspired by [DoubleDIP](https://github.com/yossigandelsman/DoubleDI
 If you use the code or results in your research, please use the following BibTeX entry.
 
 ```
-@article {ChenPGDIPS,
-	author = {Chen, Jianan and Liu, Lydia Y and Han, Wenchao and Wang, Dan and Cheung, Alison M and Tsui, Hubert and Martel, Anne L},
-	title = {General stain deconvolution of histopathology images with physics-guided deep learning},
-	elocation-id = {2022.12.06.519385},
-	year = {2022},
-	doi = {10.1101/2022.12.06.519385},
-	publisher = {Cold Spring Harbor Laboratory},
-	URL = {https://www.biorxiv.org/content/early/2022/12/10/2022.12.06.519385},
-	eprint = {https://www.biorxiv.org/content/early/2022/12/10/2022.12.06.519385.full.pdf},
-	journal = {bioRxiv}
+@inproceedings{chen2025physics,
+  title={Physics-Guided Deep Image Prior Network for General Zero-Shot Stain Deconvolution},
+  author={Chen, Jianan and Liu, Lydia Y and Han, Wenchao and Cheung, Alison and Tsui, Hubert and Martel, Anne L},
+  booktitle={International Conference on Medical Image Computing and Computer-Assisted Intervention},
+  pages={453--463},
+  year={2025},
+  organization={Springer}
 }
 
 ```
