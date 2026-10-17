@@ -19,14 +19,15 @@ from net.noise import get_noise
 from utils.image_io import *
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--config', dest='config', default='ihc.cfg', type=str, help='path of configuration file')
+parser.add_argument('--config', dest='config', default='ihc.cfg', type=str, help='config name in ./config, or a path')
+parser.add_argument('--show', action='store_true', help='open the cropped input image in a viewer')
 args = parser.parse_args()
 
 
 class Separation(object):
     def __init__(self):
         # read configuration file and prepare input image
-        self.configfile = './config/' + args.config
+        self.configfile = args.config if os.path.isfile(args.config) else './config/' + args.config
         self.config_name = self.configfile.split('/')[-1].split('.')[0]
         self.process_config()
         self.preprocess_image()
@@ -80,16 +81,16 @@ class Separation(object):
         self.x_start = int(self.config['preprocess']['x_coor_start'])
         self.y_start = int(self.config['preprocess']['y_coor_start'])
         self.num_stains = int(self.config['stain']['num_stains'])
-        self.fixed_color = bool(self.config['stain']['fixed_color'])
+        self.fixed_color = self.config.getboolean('stain', 'fixed_color')
         self.default_stain_vector_1 = self.config['stain']['default_stain_vector_1']
         self.default_stain_vector_1 = [float(x.strip('_')) for x in self.default_stain_vector_1.split(',')]
         self.default_stain_vector_2 = self.config['stain']['default_stain_vector_2']
         self.default_stain_vector_2 = [float(x.strip('_')) for x in self.default_stain_vector_2.split(',')]
-        self.use_SCF = bool(self.config['stain']['use_spectral_correction_factor'])
+        self.use_SCF = self.config.getboolean('stain', 'use_spectral_correction_factor')
         self.iters = int(self.config['network']['iterations'])
         self.keep_color_iters = int(self.config['network']['keep_color_iterations'])
         self.learning_rate = float(self.config['network']['init_learning_rate'])
-        self.plot_during_training = bool(self.config['network']['plot_during_training'])
+        self.plot_during_training = self.config.getboolean('network', 'plot_during_training')
         self.show_every = int(self.config['network']['show_every'])
         self.weight_l1 = float(self.config['loss']['weight_l1'])
         self.weight_exclusion = float(self.config['loss']['weight_exclusion'])
@@ -114,10 +115,11 @@ class Separation(object):
                              center[1] + self.input_size / 2, center[0] + self.input_size / 2))
         elif self.roi_selection == 'crop':
             i_crop = i.crop((self.x_start, self.y_start, self.x_start + self.input_size, self.y_start + self.input_size))
-            self.save_csv = f'{self.config_name}_{self.x_start}_{self.y_start}.csv'
+            self.save_csv = os.path.join(self.output_folder, f'{self.config_name}_{self.x_start}_{self.y_start}.csv')
         else:
             i_crop = i
-        i_crop.show()
+        if args.show:
+            i_crop.show()
         i_new = pil_to_np(i_crop)
         i_new = RGB_to_OD(i_new)
         self.image = i_new
@@ -354,7 +356,7 @@ class Separation(object):
             self.current_stain3_normalized_1 = torch.divide(self.current_stain3[0][1], torch.sqrt(
                 torch.pow(self.current_stain3[0][0], 2) + torch.pow(self.current_stain3[0][1], 2) + torch.pow(
                     self.current_stain3[0][2], 2)))
-            self.current_stain3_normalized_2 = torch.divide(self.current_stain2[0][2], torch.sqrt(
+            self.current_stain3_normalized_2 = torch.divide(self.current_stain3[0][2], torch.sqrt(
                 torch.pow(self.current_stain3[0][0], 2) + torch.pow(self.current_stain3[0][1], 2) + torch.pow(
                     self.current_stain3[0][2], 2)))
 
@@ -534,6 +536,7 @@ class Separation(object):
 
             mse = mean_squared_error(self.images[0], image_out_np[0])
             self.mses.append(mse)
+            new_file = not os.path.exists(self.save_csv)
             file = open(self.save_csv, 'a+', newline='')
             if self.num_stains == 2:
                 self.current_result = self.SeparationResult(Stained1=Con1_out_np, Stained2=Con2_out_np,
@@ -544,7 +547,8 @@ class Separation(object):
                     writer = csv.DictWriter(file, fieldnames=header)
 
                     # writing data row-wise into the csv file
-                    writer.writeheader()
+                    if new_file:
+                        writer.writeheader()
                     writer.writerow({'Step': step,
                                      'S1R': self.current_stain1_normalized_0.item(),
                                      'S1G': self.current_stain1_normalized_1.item(),
@@ -568,7 +572,8 @@ class Separation(object):
                     writer = csv.DictWriter(file, fieldnames=header)
 
                     # writing data row-wise into the csv file
-                    writer.writeheader()
+                    if new_file:
+                        writer.writeheader()
                     writer.writerow({'Step': step,
                                      'S1R': self.current_stain1_normalized_0.item(),
                                      'S1G': self.current_stain1_normalized_1.item(),
@@ -584,7 +589,7 @@ class Separation(object):
                                      'BGG': self.current_BG[0][1].item(),
                                      'BGB': self.current_BG[0][2].item()})
 
-            if self.best_result is None or self.best_result.mse < self.current_result.mse:
+            if self.best_result is None or self.current_result.mse < self.best_result.mse:
                 self.best_result = self.current_result
 
     def _plot_closure(self, step):

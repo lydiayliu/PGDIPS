@@ -6,7 +6,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
-import skvideo.io
 from pathlib import Path
 import os
 matplotlib.use('agg')
@@ -289,6 +288,7 @@ def prepare_image(file_name):
 
 
 def prepare_video(file_name, folder="output/"):
+    import skvideo.io
     data = skvideo.io.vread(folder + file_name)
     return crop_torch_image(data.transpose(0, 3, 1, 2).astype(np.float32) / 255.)[:35]
 
@@ -296,6 +296,7 @@ def prepare_video(file_name, folder="output/"):
 def save_video(name, video_np, output_path="output/"):
     outputdata = video_np * 255
     outputdata = outputdata.astype(np.uint8)
+    import skvideo.io
     skvideo.io.vwrite(output_path + "{}.mp4".format(name), outputdata.transpose(0, 2, 3, 1))
 
 
